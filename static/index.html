@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Ассистент системы закупок</title>
+    <script src="/static/js/jquery-3.6.0.min.js"></script>
+    <link rel="icon" href="/static/image/favicon.ico">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <h1>AI Ассистент системы закупок</h1>
+        <p>Готов помочь с анализом данных</p>
+    </div>
+
+    <div class="messages" id="messages">
+        <div class="message ai">
+            <div class="message-content">
+                <p>Привет! Я ассистент, который помогает анализировать данные в системе закупок.</p>
+                <span class="timestamp">12:30</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea id="message-input" placeholder="Введите ваш вопрос..."></textarea>
+                <button id="send-btn" class="send-btn">Отправить</button>
+            </div>
+            <p class="hint">Нажмите Enter для отправки, Shift+Enter для новой строки</p>
+        </div>
+    </div>
+
+    <script src="/static/js/index.js"></script>
+</body>
+</html>
