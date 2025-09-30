@@ -25,6 +25,7 @@ venv/
 env/
 ENV/
 .dev
+.venv/
 
 # IDE
 .idea/
@@ -52,8 +53,7 @@ Thumbs.db
 
 # Environment
 .env
-.venv/**
-.venv/
+
 
 # Specific files
 see_collections.py

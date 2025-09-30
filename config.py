@@ -1,6 +1,11 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 AI_TIMEOUT = 60
-AI_GATEWAY_URL = ""
-AI_GATEWAY_API_KEY = ""
+AI_GATEWAY_URL = os.getenv("AI_GATEWAY_URL")
+AI_GATEWAY_API_KEY = os.getenv("AI_GATEWAY_API_KEY")
 
 SCHEMA_NAME = "public"
 LLM_MODEL = "qwen3-coder"
