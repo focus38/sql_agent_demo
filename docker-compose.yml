@@ -1,0 +1,61 @@
+services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15-alpine
+    container_name: sql_agent_postgres
+    environment:
+      POSTGRES_DB: PurchaseService
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - sql_agent_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d PurchaseService"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # SQL Agent приложение
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sql_agent_app
+    environment:
+      # AI Gateway настройки (нужно настроить в .env файле)
+      AI_GATEWAY_URL: ${AI_GATEWAY_URL}
+      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY}
+      # База данных настройки
+      DB_CONNECTION_STRING: "dbname=PurchaseService user=postgres password=postgres host=postgres port=5432"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sql_agent_network
+    restart: unless-stopped
+    volumes:
+      # Монтируем статические файлы для разработки
+      - ./static:/app/static:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  sql_agent_network:
+    driver: bridge

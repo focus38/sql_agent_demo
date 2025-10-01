@@ -6,10 +6,10 @@ load_dotenv()
 AI_TIMEOUT = 60
 AI_GATEWAY_URL = os.getenv("AI_GATEWAY_URL")
 AI_GATEWAY_API_KEY = os.getenv("AI_GATEWAY_API_KEY")
+DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING")
 
 SCHEMA_NAME = "public"
 LLM_MODEL = "qwen3-coder"
-DB_CONNECTION_STRING = "dbname=PurchaseService user=postgres password=postgres host=localhost"
 SYSTEM_TABLE_NAMES = ["__EFMigrationsHistory", "__VersionedTaskHistory", "debezium_heartbeat", "debezium_signal",
                       "SignalOutbox", "InboxState", "OutboxMessage", "OutboxState"]
 ANALYTICAL_HINTS = [
