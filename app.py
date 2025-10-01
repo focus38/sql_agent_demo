@@ -69,7 +69,7 @@ async def serve_index():
 @app.exception_handler(Exception)
 async def uvicorn_exception_handler(request: Request, exc: Exception):
     url = getattr(request.url, 'path', 'unknown')
-    method = getattr(request.method, 'method', 'unknown')
+    method = request.method
     logger.exception(f"Error in request {method} {url}", exc_info=True)
     return JSONResponse(
         status_code=500,

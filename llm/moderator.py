@@ -85,7 +85,7 @@ class ModeratorService:
                             "description": "Краткое обоснование дальнейших действий."
                         },
                         "moderator_decision": {
-                            "type": "bool",
+                            "type": "boolean",
                             "description": "True, если вопрос пользователя запросом к базе данных. Иначе False."
                         },
                         "chart_type": {
