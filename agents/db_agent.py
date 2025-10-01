@@ -1,3 +1,4 @@
+import json
 import asyncio
 import logging
 
@@ -35,6 +36,7 @@ class DatabaseAgent:
             add_base_tools=True,
             model=self._setup_llm_model(),
             name="ai_assistant_purchase_system",
+            additional_authorized_imports=["json"],
             description="Я ассистент, который помогает анализировать данные в системе закупок."
         )
 
@@ -86,6 +88,60 @@ class DatabaseAgent:
 
     @staticmethod
     def create_prompt(user_query: str) -> str:
+        expected_data = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "title": "Формат данных для предоставления результата работы ai_assistant_purchase_system.",
+            "description": "Описание JSON формата данных, который должен предоставить в ответ на вопрос пользователя ai_assistant_purchase_system",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Тут должен быть заголовок, который ты придумаешь."
+                },
+                "x": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string",
+                            "description": "Тут должен быть заголовок для данных оси абсцисс"
+                        },
+                        "values": {
+                            "type": "array",
+                            "items": {
+                                "oneOf": [
+                                    {"type": "number"},
+                                    {"type": "string", "format": "date-time"}
+                                ]
+                            },
+                            "description": "Тут должны быть значения из результата выполнения SQL запроса, которые можно использовать на оси абсцисс (ось X в декартовой системе координат)."
+                        }
+                    }
+                },
+                "y": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "description": "Тут должен быть заголовок для данных"
+                            },
+                            "values": {
+                                "type": "array",
+                                "items": {
+                                    "oneOf": [
+                                        {"type": "number"},
+                                        {"type": "string"}
+                                    ]
+                                },
+                                "description": "Тут должны быть значения из результата выполнения SQL запроса, которые можно использовать на оси ординат (ось Y в декартовой системе координат)."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        expected_json_string = json.dumps(expected_data, indent=2)
         return f"""
         Ты - AI ассистент для аналитики данных. У тебя есть доступ к базе данных PostgreSQL через следующие инструменты:
 
@@ -101,7 +157,9 @@ class DatabaseAgent:
         2. Сгенерируй аналитические подсказки на основе запроса.
         3. Создай соответствующий SQL запрос.
         4. Выполни запрос и проанализируй результаты.
-        5. Предоставь понятный ответ пользователю.
+        5. Подготовь ответ пользователю в JSON формате. JSON schema предоставлена ниже:
+        {expected_json_string}
+        6. Предоставь форматированный ответ пользователю.
 
         ВАЖНО: Всегда проверяй существование таблиц и полей перед выполнением запросов.
         Будь осторожен с большими наборами данных, поэтому используй LIMIT, где это уместно.

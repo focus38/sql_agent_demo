@@ -13,10 +13,11 @@ class ModeratorService:
         self.model_name = model_name
         self.open_ai_client = open_ai_client
 
-    async def evaluate_user_query(self, user_query: str) -> tuple[bool, str]:
+    async def evaluate_user_query(self, user_query: str) -> tuple[bool, str, str | None]:
         sys_prompt = f"""
-        Ты высококвалифицированный AI ассистент для аналитики данных. У тебя есть доступ к базе данных PostgreSQL.
-        Ты анализируешь вопрос пользователя и генерируешь SQL запрос к базе данных PostgreSQL."""
+        Ты высококвалифицированный AI ассистент для глубокой аналитики данных. У тебя есть доступ к базе данных PostgreSQL.
+        Ты анализируешь вопрос пользователя и генерируешь SQL запрос к базе данных PostgreSQL.
+        Так же ты можешь рекомендовать тип диаграммы для визуализации ответа пользователю."""
 
         chat_messages = [
             ChatCompletionSystemMessageParam(role="system", content=sys_prompt),
@@ -37,23 +38,24 @@ class ModeratorService:
             )
         except Exception as e:
             traceback.print_exc()
-            return False, "Произошла ошибка при оценке запроса."
+            return False, "Произошла ошибка при оценке запроса.", None
 
         try:
             result = json.loads(completion.choices[0].message.tool_calls[0].function.arguments)
-            print(result)
             answer = result["answer"]
+            chart_type = result["chart_type"]
             decision = str_to_bool(result["moderator_decision"])
-            return decision, answer
+            return decision, answer, chart_type
         except Exception as ex:
-            print(completion.choices[0].message)
+            print(completion)
             traceback.print_exc()
-            return False, "Произошла ошибка в процессе декодирования ответа."
+            return False, "Произошла ошибка в процессе декодирования ответа.", None
 
     @staticmethod
     def create_moderator_description() -> str:
         return """
 Оцени вопрос пользователя и определи, является ли он запросом к базе данных или общим запросом.
+Если вопрос пользователя ЯВЛЯЕТСЯ запросом к базе данных, то определи тип диаграммы, который лучше всего подходит для визуализации данных.
 Если вопрос пользователя НЕ ЯВЛЯЕТСЯ запросом к базе данных, то НЕ ОТВЕЧАЙ НА НЕГО, НЕ РАССУЖДАЙ.
 
 Вопрос считается запросом к базе данных, если он:
@@ -85,9 +87,14 @@ class ModeratorService:
                         "moderator_decision": {
                             "type": "bool",
                             "description": "True, если вопрос пользователя запросом к базе данных. Иначе False."
+                        },
+                        "chart_type": {
+                            "type": "string",
+                            "enum": ["pie", "bar", "line", "doughnut", "area", "histogram", "bubble", "time series", "funnel"],
+                            "description": "Тип диаграммы, который лучше всего использовать для визуализации данных, если вопрос пользователя представляет собой запрос к базе данных."
                         }
                     },
-                    "required": ["answer", "moderator_decision"],
+                    "required": ["answer", "moderator_decision", "chart_type"],
                     "additionalProperties": False
                 }
             )
