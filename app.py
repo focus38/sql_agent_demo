@@ -8,6 +8,7 @@ from llm.moderator import ModeratorService
 from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import JSONResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 db_config = {
     "connection_string": config.DB_CONNECTION_STRING,
@@ -48,6 +49,19 @@ async def lifespan(application: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,         
+    allow_methods=["POST", "OPTIONS"],
+    allow_headers=["*"],     
+)
+
 @app.get("/")
 async def serve_index():
     return FileResponse(f"static/index.html")
@@ -55,7 +69,7 @@ async def serve_index():
 @app.exception_handler(Exception)
 async def uvicorn_exception_handler(request: Request, exc: Exception):
     url = getattr(request.url, 'path', 'unknown')
-    method = getattr(request.method, 'method', 'unknown')
+    method = request.method
     logger.exception(f"Error in request {method} {url}", exc_info=True)
     return JSONResponse(
         status_code=500,

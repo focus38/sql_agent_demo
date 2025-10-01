@@ -104,7 +104,7 @@ $(document).ready(function() {
 
         // AJAX запрос к API
         $.ajax({
-            url: 'http://localhost:8000/completion',
+            url: '/completion',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ question: message }),
