@@ -1,6 +1,7 @@
 import json
-import traceback
+import logging
 
+from model.api import AgentRequest
 from utils.parser import str_to_bool
 from openai import AsyncOpenAI
 from openai.types.shared_params import FunctionDefinition
@@ -12,8 +13,9 @@ class ModeratorService:
         self.timeout = 30
         self.model_name = model_name
         self.open_ai_client = open_ai_client
+        self.logger = logging.getLogger(__name__)
 
-    async def evaluate_user_query(self, user_query: str) -> tuple[bool, str, str | None]:
+    async def evaluate_user_query(self, request: AgentRequest) -> tuple[bool, str, str | None]:
         sys_prompt = f"""
         Ты высококвалифицированный AI ассистент для глубокой аналитики данных. У тебя есть доступ к базе данных PostgreSQL.
         Ты анализируешь вопрос пользователя и генерируешь SQL запрос к базе данных PostgreSQL.
@@ -21,7 +23,7 @@ class ModeratorService:
 
         chat_messages = [
             ChatCompletionSystemMessageParam(role="system", content=sys_prompt),
-            ChatCompletionUserMessageParam(role="user", content=user_query)
+            ChatCompletionUserMessageParam(role="user", content=request.question)
         ]
 
         try:
@@ -33,22 +35,33 @@ class ModeratorService:
                 tool_choice="required",
                 messages=chat_messages,
                 parallel_tool_calls=False,
-                model=self.model_name,
+                model=request.model_name if request.model_name is not None else self.model_name,
                 timeout=self.timeout
             )
         except Exception as e:
-            traceback.print_exc()
+            self.logger.exception("Произошла ошибка при оценке запроса.", exc_info=True)
             return False, "Произошла ошибка при оценке запроса.", None
 
         try:
-            result = json.loads(completion.choices[0].message.tool_calls[0].function.arguments)
+            response = completion.choices[0].message
+            result = json.loads(response.tool_calls[0].function.arguments)
             answer = result["answer"]
             chart_type = result["chart_type"]
             decision = str_to_bool(result["moderator_decision"])
+            prompt_tokens = None
+            completion_tokens = None
+            total_tokens = None
+            if completion.usage is not None:
+                prompt_tokens = completion.usage.prompt_tokens
+                completion_tokens = completion.usage.completion_tokens
+                total_tokens = completion.usage.total_tokens
+            self.logger.info(f"Moderator response: decision={decision}, chart_type={chart_type}, "
+                             f"prompt_tokens={prompt_tokens}, completion_tokens={completion_tokens}, "
+                             f"total_tokens={total_tokens}")
             return decision, answer, chart_type
         except Exception as ex:
-            print(completion)
-            traceback.print_exc()
+            self.logger.exception("Произошла ошибка в процессе декодирования ответа.", exc_info=True)
+            self.logger.info(f"completion response: {completion}")
             return False, "Произошла ошибка в процессе декодирования ответа.", None
 
     @staticmethod
@@ -90,7 +103,7 @@ class ModeratorService:
                         },
                         "chart_type": {
                             "type": "string",
-                            "enum": ["pie", "bar", "line", "doughnut", "area", "histogram", "bubble", "time series", "funnel"],
+                            "enum": ["area", "bar", "bubble", "doughnut", "pie", "line", "polarArea", "radar"],
                             "description": "Тип диаграммы, который лучше всего использовать для визуализации данных, если вопрос пользователя представляет собой запрос к базе данных."
                         }
                     },

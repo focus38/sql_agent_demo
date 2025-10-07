@@ -1,5 +1,6 @@
 import asyncio
 import decimal
+import traceback
 
 from smolagents import Tool
 from typing import Any, Dict, List
@@ -20,7 +21,11 @@ class DataBaseSchemaTool(Tool):
         self.db_schema_service = db_schema_service
 
     def forward(self):
-        return asyncio.run(self.db_schema_service.get_schema())
+        try:
+            return asyncio.run(self.db_schema_service.get_schema())
+        except Exception as ex:
+            print(f"Error in db_schema_service forward: {ex}")
+            traceback.print_exc()
 
 class TableInfoTool(Tool):
     name = "get_table_info"

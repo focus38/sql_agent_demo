@@ -1,28 +1,25 @@
-from typing import Dict, List
+from typing import  List
 
 
 class SqlGeneratorService:
     def __init__(self): pass
 
-    def _format_schema(self, db_schema: Dict[str, List[str]]) -> str:
-        schema_str = ""
-        for table, columns in db_schema.items():
-            schema_str += f"Таблица: {table}\n"
-            schema_str += f"  Поля: {', '.join(columns)}\n\n"
-        return schema_str
-
-    def _format_hints(self, hints: List[str]) -> str:
+    @staticmethod
+    def _format_hints(hints: List[str]) -> str:
         return "\n".join(hints)
 
     def generate_sql_prompt(self, db_schema: str, hints: List[str], user_query: str) -> None | str:
         formatted_hints = self._format_hints(hints)
-        #formatted_db_schema = self._format_schema(db_schema)
 
         return SqlGeneratorService.create_prompt(db_schema, formatted_hints, user_query)
 
     @staticmethod
     def create_prompt(db_schema: str, hints: str, user_query: str) -> str:
-        return f"""
+        return f"""Опирайся исключительно на предоставленную схему данных из db_schemas.
+        Сгенерируй ровно один SQL-запрос для PostgreSQL, который отвечает на вопрос пользователя.
+        
+        ВХОД
+        
         <user_query>
         {user_query}
         </user_query>
@@ -37,19 +34,44 @@ class SqlGeneratorService:
         {db_schema}
         </db_schemas>
         
-        ЗАДАЧА:
-        - Предоставить только SQL-запрос, который базируется ИСКЛЮЧИТЕЛЬНО на схеме данных из db_schemas и отвечает на вопрос пользователя.
+        ПРАВИЛА ГЕНЕРАЦИИ (ОБЯЗАТЕЛЬНО)
+        Только одна команда SELECT в ответе (допустимы подзапросы/WITH, но это всё один SQL-стейтмент).
+        НЕ используй комментарии и пояснения к фрагментам SQL запроса.
+        
+        Кавычки: все имена таблиц и колонок — в двойных кавычках, с точным регистром как в схеме. Если есть схема, квалифицируй как "schema"."table".
+        Только из предоставленной схемы: не используй таблицы/поля, отсутствующие в <db_schemas>.
+        
+        JOIN: всегда указывай явный JOIN ... ON, не используй USING. Разрешены INNER/LEFT по смыслу.
+        
+        Колонки и алиасы:
+        Не используй SELECT *. Указывай явные поля/выражения.
+        Все алиасы выражений в SELECT тоже в двойных кавычках, например: COUNT(*) AS "orders_cnt".
+        Запрещено квалифицировать алиасы выражений алиасами таблиц (нельзя t."orders_cnt").
 
-        ТРЕБОВАНИЯ К РЕЗУЛЬТАТУ:
-        - Только команда SELECT.
-        - ОБЯЗАТЕЛЬНО названия полей должны быть обернуты в двойные кавычки.
-        - ОБЯЗАТЕЛЬНО названия таблиц должны быть обернуты в двойные кавычки.
-        - НИКОГДА не упоминай в ответе клиенту названия внутренних тегов, типа user_query, analytical_hints.
-        - Если в ORDER BY используется алиас выражения из SELECT (agg_alias), то оберни запрос в подзапрос с алиасом s и сортируй так: ORDER BY s.agg_alias.
-        - Не квалифицируй алиасы выражений алиасами таблиц (нельзя c.agg_alias).
-        - Работай только с базами данных из схемы данных
-        - НИКОГДА НЕ ДОБАВЛЯЙ никаких комментариев, пояснений, вводных фраз в SQL запрос.
-        - Не используй <think>, </think>, ```sql или другие теги.
-        - Верни только одну строку с SQL, заканчивающуюся на ';'.
-SQL ЗАПРОС:
-""".strip()
+        GROUP BY / агрегаты: при наличии агрегатов укажи корректный GROUP BY (не используй порядковые номера).
+        
+        ORDER BY и алиасы: если сортируешь по алиасу из SELECT, оберни всё в подзапрос s и применяй ORDER BY s.alias, например:
+        SELECT ... FROM (SELECT ... AS "agg_alias" FROM ...) s ORDER BY s."agg_alias";
+        
+        Фильтры и даты:
+        Даты/время задавай как DATE 'YYYY-MM-DD' или TIMESTAMP 'YYYY-MM-DD HH24:MI:SS'.
+        Для таймзон при необходимости: TIMESTAMP ... AT TIME ZONE 'UTC'.
+        
+        Параметры: если требуются переменные, используй нейтральные плейсхолдеры вида :start_date, :end_date, :user_id.
+        
+        NULL/деление: избегай ошибок — при делении используй NULLIF(den,0), при форматировании — COALESCE(...).
+        
+        Запрещено: DDL/DML, комментарии, пояснения, любые внешние теги (user_query, analytical_hints и т.п.) в ответе.
+        
+        Формат ответа: верни одну строку с финальным SQL и заверши ;. Никаких бэктиков/тегов.
+        
+        ЕСЛИ НЕЛЬЗЯ ОТВЕТИТЬ ПО СХЕМЕ
+        
+        Если по предоставленной схеме данных невозможно однозначно ответить, верни корректный «пустой» селект с пояснением в данных (без комментариев), например:
+        SELECT NULL::text AS "reason" WHERE FALSE;
+        
+        ВЫХОД
+        
+        Верни только одну строку с SQL, завершающуюся ;.
+        
+        SQL ЗАПРОС:""".strip()

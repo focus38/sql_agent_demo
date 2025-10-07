@@ -1,4 +1,6 @@
 import uuid
+
+import config
 from model.api import AgentRequest
 from agents.db_agent import DatabaseAgent
 from llm.moderator import ModeratorService
@@ -16,13 +18,16 @@ async def get_response(
         agent: DatabaseAgent = Depends(get_agent)):
     if not request.question.strip():
         return JSONResponse(status_code=400, content={"detail": "Запрос пользователя должен быть указан."})
+    if request.model_name is None or request.model_name == "":
+        request.model_name = config.DEFAULT_LLM_MODEL
+
     request_id = str(uuid.uuid4())
     try:
-        decision, answer, chart_type = await moderator_service.evaluate_user_query(request.question)
+        decision, answer, chart_type = await moderator_service.evaluate_user_query(request)
         if not decision:
             return {"moderator_decision": decision, "answer": answer, "chart_type": None, "id": request_id}
 
-        result = await agent.process_query_async(request.question)
+        result = await agent.process_query_async(request)
         return {"moderator_decision": decision, "answer": result, "chart_type": chart_type, "id": request_id}
     except Exception:
         raise HTTPException(status_code=500, detail="Error generating response")

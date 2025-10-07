@@ -17,7 +17,7 @@ db_config = {
     "db_metadata": config.DB_METADATA
 }
 ai_config = {
-    "model_name": config.LLM_MODEL,
+    "model_name": config.DEFAULT_LLM_MODEL,
     "api_key": config.AI_GATEWAY_API_KEY,
     "ai_gateway_url": config.AI_GATEWAY_URL
 }
@@ -35,7 +35,7 @@ async def lifespan(application: FastAPI):
     global moderator_service
     try:
         open_ai_client = AsyncOpenAI(base_url=config.AI_GATEWAY_URL, api_key=config.AI_GATEWAY_API_KEY)
-        moderator_service = ModeratorService(config.LLM_MODEL, open_ai_client)
+        moderator_service = ModeratorService(config.DEFAULT_LLM_MODEL, open_ai_client)
         agent = DatabaseAgent(db_config=db_config, ai_config=ai_config)
 
         from controller.completion import completion_router

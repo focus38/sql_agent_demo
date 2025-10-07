@@ -28,7 +28,15 @@
         <div class="input-container">
             <div class="input-wrapper">
                 <textarea id="message-input" placeholder="Введите ваш вопрос..."></textarea>
-                <button id="send-btn" class="send-btn">Отправить</button>
+                <div class="send-btn-wrapper">
+                    <select id="model-options" class="send-options">
+                        <option value="">Выберите модель</option>
+                        <option value="qwen3-coder">qwen3-coder</option>
+                        <option value="deepseek-v3.2-exp">deepseek-v3.2-exp</option>
+                        <option value="gpt-5-mini">gpt-5-mini</option>
+                    </select>
+                    <button id="send-btn" class="send-btn">Отправить</button>
+                </div>
             </div>
             <p class="hint">Нажмите Enter для отправки, Shift+Enter для новой строки</p>
         </div>

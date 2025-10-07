@@ -2,8 +2,12 @@ $(document).ready(function() {
     const messagesContainer = $('#messages');
     const messageInput = $('#message-input');
     const sendButton = $('#send-btn');
+    const modelOptions = $('#model-options');
+    const defaultModel = "qwen3-coder";
+
     let isTyping = false;
     let last_data = null;
+    let selectedModel = defaultModel;
 
     // Добавление сообщения в чат
     function addMessage(message, type) {
@@ -41,6 +45,7 @@ $(document).ready(function() {
         if (typeof response.answer === "string") {
             json_str = response.answer.replaceAll('\n', '').replaceAll('\\"', '"')
             data = JSON.parse(json_str)
+            response.answer = data;
         } else {
             data = response.answer;
         }
@@ -89,6 +94,15 @@ $(document).ready(function() {
         sendButton.prop('disabled', !messageInput.val().trim());
     }
 
+    function onChangeModel() {
+        const text = modelOptions.val();
+        if (text === '') {
+            selectedModel = defaultModel;
+        } else {
+            selectedModel = text;
+        }
+    }
+
     // Отправка сообщения
     function sendMessage() {
         const message = messageInput.val().trim();
@@ -107,7 +121,7 @@ $(document).ready(function() {
             url: '/completion',
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ question: message }),
+            data: JSON.stringify({ question: message, model_name: selectedModel }),
             success: function(data) {
                 hideTypingIndicator();
                 console.log(data)
@@ -123,6 +137,8 @@ $(document).ready(function() {
             }
         });
     }
+
+    modelOptions.change(onChangeModel)
 
     // Обработчик кнопки отправки
     sendButton.click(sendMessage);
@@ -182,11 +198,13 @@ $(document).ready(function() {
         const canvas_id = `canvas-${id}`
         $container.append(`<div class="chart-container"><canvas id="${canvas_id}"></canvas>`)
         const ctx = document.getElementById(canvas_id).getContext('2d');
-        json_str = last_data.answer.replaceAll('\n', '').replaceAll('\\"', '"')
-        const chart_type = last_data.chart_type == null || last_data.chart_type == undefined
+        let chart_type = last_data.chart_type == null || last_data.chart_type == undefined
           ? "bar"
           : last_data.chart_type;
-        const data = JSON.parse(json_str)
+        if (chart_type === "time series") {
+            chart_type = "line"
+        }
+        const data = last_data.answer;
         const labels = data.x.values;
         const datasets = [];
         for (let i=0; i<data.y.length; i++) {
@@ -200,6 +218,7 @@ $(document).ready(function() {
         // Убираем предыдущий график, если он есть
         if (window.aiChart) {
             window.aiChart.destroy();
+            window.aiChart = null;
         }
         // Создаём новый график
         window.aiChart = new Chart(ctx, {
@@ -225,4 +244,7 @@ $(document).ready(function() {
             }
         });
     });
+
+    onChangeModel();
+
 });

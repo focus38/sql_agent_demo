@@ -42,6 +42,7 @@ bash dev.sh  # На Windows: python main.py
    # Отредактируйте .env файл, указав ваши настройки:
    # - AI_GATEWAY_URL: URL вашего AI Gateway
    # - AI_GATEWAY_API_KEY: API ключ для доступа к ИИ
+   # - DB_CONNECTION_STRING: строка подключения к БД
    ```
 
 2. **Запуск приложения:**
@@ -76,7 +77,7 @@ docker-compose down
 | `AI_GATEWAY_URL` | URL AI Gateway для ИИ | - |
 | `AI_GATEWAY_API_KEY` | API ключ для AI Gateway | - |
 | `DB_CONNECTION_STRING` | Строка подключения к PostgreSQL | Настроена для Docker |
-| `LLM_MODEL` | Модель ИИ для генерации SQL | `qwen3-coder` |
+| `DEFAULT_LLM_MODEL` | Модель ИИ для генерации SQL | `qwen3-coder` |
 | `SCHEMA_NAME` | Имя схемы базы данных | `public` |
 
 ### Структура проекта

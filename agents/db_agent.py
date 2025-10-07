@@ -8,7 +8,8 @@ from database.sql_executor import SqlExecutor
 from database.db_schema_service import DbSchemaService
 from analytics.analytics_hint_service import AnalyticsHintService
 from llm.sql_generator_service import SqlGeneratorService
-from agents.tools import DataBaseSchemaTool, TableInfoTool, GenerateSqlTool, AnalyticsHintTool, SqlExecutorTool
+from agents.tools import DataBaseSchemaTool, GenerateSqlTool, AnalyticsHintTool, SqlExecutorTool
+from model.api import AgentRequest
 
 
 class DatabaseAgent:
@@ -50,11 +51,11 @@ class DatabaseAgent:
         # Базовые параметры для модели
         model_params = {
             'api_key': self.api_key,
-            'model': f"litellm_proxy/{self.model_name}",
-            'model_id': f"litellm_proxy/{self.model_name}",
+            'model': self._get_model_name(),
+            'model_id': self._get_model_id(),
             'api_base': self.ai_gateway_url,
             'temperature': 0.1,  # Низкая температура для более детерминированных SQL запросов
-            'max_tokens': 2000
+            'max_tokens': 50000
         }
 
         try:
@@ -65,6 +66,12 @@ class DatabaseAgent:
             self.logger.error(f"Error configuring LLM model: {e}")
             raise
 
+    def _get_model_id(self) -> str:
+        return f"litellm_proxy/{self.model_name}"
+
+    def _get_model_name(self) -> str:
+        return f"litellm_proxy/{self.model_name}"
+
     def _create_tools(self) -> List[Tool]:
         return [
             DataBaseSchemaTool(self.db_schema_service),
@@ -74,17 +81,19 @@ class DatabaseAgent:
             SqlExecutorTool(self.sql_executor)
         ]
 
-    def process_query(self, user_query: str) -> str:
+    def process_query(self, request: AgentRequest) -> str:
         try:
-            prompt = DatabaseAgent.create_prompt(user_query)
+            self.model_name = request.model_name
+            self.agent.model = self._setup_llm_model()
+            prompt = DatabaseAgent.create_prompt(request.question)
             return self.agent.run(prompt)
         except Exception as e:
             self.logger.error(f"Error processing query: {e}")
             return f"Произошла ошибка при обработке запроса: {str(e)}"
 
-    async def process_query_async(self, user_query: str) -> str:
+    async def process_query_async(self, request: AgentRequest) -> str:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, self.process_query, user_query)
+        return await loop.run_in_executor(None, self.process_query, request)
 
     @staticmethod
     def create_prompt(user_query: str) -> str:
@@ -96,14 +105,14 @@ class DatabaseAgent:
             "properties": {
                 "title": {
                     "type": "string",
-                    "description": "Тут должен быть заголовок, который ты придумаешь."
+                    "description": "Тут должен быть заголовок на русском языке, который ты придумаешь."
                 },
                 "x": {
                     "type": "object",
                     "properties": {
                         "title": {
                             "type": "string",
-                            "description": "Тут должен быть заголовок для данных оси абсцисс"
+                            "description": "Тут должен быть заголовок для данных оси абсцисс на русском языке."
                         },
                         "values": {
                             "type": "array",
@@ -124,7 +133,7 @@ class DatabaseAgent:
                         "properties": {
                             "title": {
                                 "type": "string",
-                                "description": "Тут должен быть заголовок для данных"
+                                "description": "Тут должен быть заголовок для данных на русском языке."
                             },
                             "values": {
                                 "type": "array",
