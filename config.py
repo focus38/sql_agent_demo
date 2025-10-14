@@ -9,6 +9,8 @@ AI_GATEWAY_API_KEY = os.getenv("AI_GATEWAY_API_KEY")
 DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING")
 
 SCHEMA_NAME = "public"
+MODERATOR_MODELS = ["qwen3-coder", "deepseek-v3.2-exp"]
+MODERATOR_MAX_RETRIES = 3
 DEFAULT_LLM_MODEL = "qwen3-coder"
 SYSTEM_TABLE_NAMES = ["__EFMigrationsHistory", "__VersionedTaskHistory", "debezium_heartbeat", "debezium_signal",
                       "SignalOutbox", "InboxState", "OutboxMessage", "OutboxState"]

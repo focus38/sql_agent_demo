@@ -3,7 +3,7 @@ import logging
 
 from openai import AsyncOpenAI
 from fastapi import FastAPI, Request
-from agents.db_agent import DatabaseAgent
+from agents.smol_agent import DatabaseAgent
 from llm.moderator import ModeratorService
 from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
@@ -35,7 +35,7 @@ async def lifespan(application: FastAPI):
     global moderator_service
     try:
         open_ai_client = AsyncOpenAI(base_url=config.AI_GATEWAY_URL, api_key=config.AI_GATEWAY_API_KEY)
-        moderator_service = ModeratorService(config.DEFAULT_LLM_MODEL, open_ai_client)
+        moderator_service = ModeratorService(config.MODERATOR_MODELS, open_ai_client)
         agent = DatabaseAgent(db_config=db_config, ai_config=ai_config)
 
         from controller.completion import completion_router

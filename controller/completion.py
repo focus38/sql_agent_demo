@@ -2,7 +2,7 @@ import uuid
 
 import config
 from model.api import AgentRequest
-from agents.db_agent import DatabaseAgent
+from agents.smol_agent import DatabaseAgent
 from llm.moderator import ModeratorService
 from starlette.responses import JSONResponse
 from fastapi import APIRouter, Depends, HTTPException

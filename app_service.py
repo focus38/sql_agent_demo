@@ -1,5 +1,5 @@
 from app import agent, moderator_service
-from agents.db_agent import DatabaseAgent
+from agents.smol_agent import DatabaseAgent
 from llm.moderator import ModeratorService
 
 
